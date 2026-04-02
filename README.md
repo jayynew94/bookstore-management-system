@@ -18,9 +18,9 @@ This project is a Bookstore Management System designed to help manage inventory,
 - Generate simple reports
 
 ## Tech Stack
-- Java
+- python
 - Git/GitHub
-- (Add database/framework here if used)
+  
 
 ## Repository Workflow
 1. Pull latest changes from `main`
