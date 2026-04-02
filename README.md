@@ -1,8 +1,10 @@
 # Bookstore Management System
 
 ## Team Members
-- Jeremy New
-- Add teammates here
+- Jeremy N
+- Danielle N
+- Kyle W
+- Aeryn W
 
 ## Project Overview
 This project is a Bookstore Management System designed to help manage inventory, customer orders, sales records, and restocking of books.
