@@ -7,20 +7,35 @@
 - Aeryn W
 
 ## Project Overview
-This project is a Bookstore Management System designed to help manage inventory, customer orders, sales records, and restocking of books.
+This project is a desktop Bookstore Management System built with Python and Tkinter. It includes a login screen, dashboard, inventory management workflow, customer management, order placement, and JSON-based local persistence.
 
 ## Features
-- Add, update, and delete books
-- Track inventory
-- Place customer orders
-- Record sales
-- Manage customer information
-- Generate simple reports
+- Validate login input
+- View a dashboard with inventory summary metrics
+- Browse current inventory in a table
+- Add, edit, and delete books with validation
+- Manage customers and place orders
+- Persist books, customers, and orders to local JSON storage
+- Track inventory totals and estimated stock value
 
 ## Tech Stack
-- python
+- Python
+- Tkinter
 - Git/GitHub
-  
+
+## Run The App
+```bash
+python3 src/main.py
+```
+
+## Run Tests
+```bash
+PYTHONPATH=src python3 -m unittest discover -s tests -v
+```
+
+## Data Storage
+- App data is saved to `data/bookstore_data.json`
+- On first launch, the app seeds sample books automatically
 
 ## Repository Workflow
 1. Pull latest changes from `main`
@@ -32,6 +47,6 @@ This project is a Bookstore Management System designed to help manage inventory,
 
 ## Folder Structure
 - `docs/` project documentation
-- `src/` source code
-- `tests/` test files
+- `src/` application source code
+- `tests/` unit tests
 - `assets/` screenshots and diagrams
