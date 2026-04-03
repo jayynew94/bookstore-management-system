@@ -1,0 +1,37 @@
+import unittest
+
+from services.auth_service import AuthService
+
+
+class AuthServiceTests(unittest.TestCase):
+    def setUp(self):
+        self.service = AuthService()
+
+    def test_rejects_missing_username_or_password(self):
+        is_valid, message, user = self.service.authenticate("", "")
+        self.assertFalse(is_valid)
+        self.assertEqual(message, "Please enter both username and password.")
+        self.assertIsNone(user)
+
+    def test_rejects_invalid_credentials(self):
+        is_valid, message, user = self.service.authenticate("manager", "wrongpass")
+        self.assertFalse(is_valid)
+        self.assertEqual(message, "Invalid username or password.")
+        self.assertIsNone(user)
+
+    def test_accepts_valid_staff_credentials(self):
+        is_valid, message, user = self.service.authenticate("manager", "securepass")
+        self.assertTrue(is_valid)
+        self.assertEqual(message, "")
+        self.assertEqual(user["role"], "staff")
+        self.assertEqual(user["display_name"], "Store Manager")
+
+    def test_accepts_valid_customer_credentials(self):
+        is_valid, message, user = self.service.authenticate("customer1", "reader123")
+        self.assertTrue(is_valid)
+        self.assertEqual(message, "")
+        self.assertEqual(user["role"], "customer")
+
+
+if __name__ == "__main__":
+    unittest.main()
