@@ -64,7 +64,18 @@ class InventoryServiceTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "Not enough stock"):
             service.reduce_stock(book.book_id, 3)
+    
+    def test_get_book_invalid_id_raises_error(self):
+        service = InventoryService([])
+        with self.assertRaises(ValueError):
+            service.get_book("invalid-id")
 
+    def test_reduce_stock_success(self):
+        book = Book("Dune", "Frank Herbert", "Sci-Fi", 10, 5)
+        service = InventoryService([book])
 
+        updated = service.reduce_stock(book.book_id, 2)
+        self.assertEqual(updated.quantity, 3)
+        
 if __name__ == "__main__":
     unittest.main()
