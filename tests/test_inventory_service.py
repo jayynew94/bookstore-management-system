@@ -28,6 +28,9 @@ class InventoryServiceTests(unittest.TestCase):
     def test_add_book_rejects_invalid_data(self):
         service = InventoryService([])
 
+        with self.assertRaisesRegex(ValueError, "required"):
+            service.add_book("", "Author", "Genre", 10, 1)
+
         with self.assertRaisesRegex(ValueError, "greater than 0"):
             service.add_book("Title", "Author", "Genre", 0, 1)
 
