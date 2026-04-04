@@ -8,8 +8,16 @@ class InventoryWindow(ttk.Frame):
         self.inventory_service = inventory_service
         self.on_back = on_back
         self.selected_book_id = None
+        self.detail_vars = {
+            "title": tk.StringVar(value="No book selected"),
+            "author": tk.StringVar(value="-"),
+            "genre": tk.StringVar(value="-"),
+            "price": tk.StringVar(value="-"),
+            "quantity": tk.StringVar(value="-"),
+        }
 
         self.columnconfigure(0, weight=1)
+        self.rowconfigure(1, weight=1)
 
         header_frame = ttk.Frame(self)
         header_frame.grid(row=0, column=0, sticky="ew", pady=(0, 18))
@@ -24,9 +32,16 @@ class InventoryWindow(ttk.Frame):
             row=0, column=1, sticky="e"
         )
 
-        inventory_frame = ttk.LabelFrame(self, text="Current Titles", padding=12)
-        inventory_frame.grid(row=1, column=0, sticky="nsew")
+        content_frame = ttk.Frame(self)
+        content_frame.grid(row=1, column=0, sticky="nsew")
+        content_frame.columnconfigure(0, weight=3)
+        content_frame.columnconfigure(1, weight=2)
+        content_frame.rowconfigure(0, weight=1)
+
+        inventory_frame = ttk.LabelFrame(content_frame, text="Current Titles", padding=12)
+        inventory_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 12))
         inventory_frame.columnconfigure(0, weight=1)
+        inventory_frame.rowconfigure(0, weight=1)
 
         columns = ("title", "author", "genre", "price", "quantity")
         self.tree = ttk.Treeview(inventory_frame, columns=columns, show="headings", height=8)
@@ -45,6 +60,33 @@ class InventoryWindow(ttk.Frame):
         scrollbar.grid(row=0, column=1, sticky="ns")
         self.tree.configure(yscrollcommand=scrollbar.set)
         self.tree.bind("<<TreeviewSelect>>", self.handle_selection)
+
+        detail_frame = ttk.LabelFrame(content_frame, text="Book Detail View", padding=12)
+        detail_frame.grid(row=0, column=1, sticky="nsew")
+        detail_frame.columnconfigure(1, weight=1)
+
+        for row_index, (label, key) in enumerate(
+            [
+                ("Title", "title"),
+                ("Author", "author"),
+                ("Genre", "genre"),
+                ("Price", "price"),
+                ("Quantity", "quantity"),
+            ]
+        ):
+            ttk.Label(detail_frame, text=f"{label}:").grid(
+                row=row_index,
+                column=0,
+                sticky="nw",
+                padx=(0, 10),
+                pady=6,
+            )
+            ttk.Label(
+                detail_frame,
+                textvariable=self.detail_vars[key],
+                wraplength=220,
+                justify="left",
+            ).grid(row=row_index, column=1, sticky="nw", pady=6)
 
         form_frame = ttk.LabelFrame(self, text="Book Details", padding=12)
         form_frame.grid(row=2, column=0, sticky="ew", pady=(18, 0))
@@ -105,10 +147,12 @@ class InventoryWindow(ttk.Frame):
         selected_items = self.tree.selection()
         if not selected_items:
             self.selected_book_id = None
+            self._clear_detail_panel()
             return
 
         self.selected_book_id = selected_items[0]
         book = self.inventory_service.get_book(self.selected_book_id)
+        self._update_detail_panel(book)
         self.inputs["title"].delete(0, "end")
         self.inputs["title"].insert(0, book.title)
         self.inputs["author"].delete(0, "end")
@@ -146,6 +190,7 @@ class InventoryWindow(ttk.Frame):
         self.status_var.set("Book updated successfully.")
         self.refresh_books()
         self.tree.selection_set(self.selected_book_id)
+        self.handle_selection()
 
     def delete_book(self):
         if not self.selected_book_id:
@@ -160,6 +205,7 @@ class InventoryWindow(ttk.Frame):
 
         self._clear_form()
         self.selected_book_id = None
+        self._clear_detail_panel()
         self.status_var.set("Book deleted successfully.")
         self.refresh_books()
 
@@ -176,3 +222,16 @@ class InventoryWindow(ttk.Frame):
         for entry in self.inputs.values():
             entry.delete(0, "end")
 
+    def _update_detail_panel(self, book):
+        self.detail_vars["title"].set(book.title)
+        self.detail_vars["author"].set(book.author)
+        self.detail_vars["genre"].set(book.genre)
+        self.detail_vars["price"].set(f"${book.price:.2f}")
+        self.detail_vars["quantity"].set(str(book.quantity))
+
+    def _clear_detail_panel(self):
+        self.detail_vars["title"].set("No book selected")
+        self.detail_vars["author"].set("-")
+        self.detail_vars["genre"].set("-")
+        self.detail_vars["price"].set("-")
+        self.detail_vars["quantity"].set("-")
