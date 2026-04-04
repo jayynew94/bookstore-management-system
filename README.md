@@ -13,6 +13,7 @@ This project is a desktop Bookstore Management System built with Python and Tkin
 - Validate login input
 - View a dashboard with inventory summary metrics
 - Browse current inventory in a table
+- Open a single book record to review its details
 - Add, edit, and delete books with validation
 - Manage customers and place orders
 - Persist books, customers, and orders to local JSON storage

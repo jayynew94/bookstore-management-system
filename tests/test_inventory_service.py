@@ -28,6 +28,9 @@ class InventoryServiceTests(unittest.TestCase):
     def test_add_book_rejects_invalid_data(self):
         service = InventoryService([])
 
+        with self.assertRaisesRegex(ValueError, "required"):
+            service.add_book("", "Author", "Genre", 10, 1)
+
         with self.assertRaisesRegex(ValueError, "greater than 0"):
             service.add_book("Title", "Author", "Genre", 0, 1)
 
@@ -64,6 +67,15 @@ class InventoryServiceTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "Not enough stock"):
             service.reduce_stock(book.book_id, 3)
+
+    def test_get_book_returns_single_record_details(self):
+        book = Book("Dune", "Frank Herbert", "Science Fiction", 14.5, 2)
+        service = InventoryService([book])
+
+        selected = service.get_book(book.book_id)
+
+        self.assertEqual(selected.title, "Dune")
+        self.assertEqual(selected.author, "Frank Herbert")
 
 
 if __name__ == "__main__":
