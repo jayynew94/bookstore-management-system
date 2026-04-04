@@ -23,8 +23,17 @@ class OrdersServiceTests(unittest.TestCase):
         self.assertEqual(order.total, 29.0)
         self.assertEqual(self.orders_service.total_orders(), 1)
         self.assertEqual(self.inventory_service.get_book(self.book.book_id).quantity, 6)
+    
+    def test_place_order_invalid_quantity(self):
+        customer = self.orders_service.add_customer("Casey", "casey@example.com")
 
-
+        with self.assertRaises(ValueError):
+             self.orders_service.place_order(customer.customer_id, self.book.book_id, 0)
+    
+    def test_place_order_invalid_customer(self):
+        with self.assertRaises(ValueError):
+             self.orders_service.place_order("bad-id", self.book.book_id, 1)
+            
 if __name__ == "__main__":
     unittest.main()
 
