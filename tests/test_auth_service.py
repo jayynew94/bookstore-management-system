@@ -31,7 +31,10 @@ class AuthServiceTests(unittest.TestCase):
         self.assertTrue(is_valid)
         self.assertEqual(message, "")
         self.assertEqual(user["role"], "customer")
-
+    
+    def test_username_is_case_insensitive(self):
+        is_valid, message, user = self.service.authenticate("MANAGER", "securepass")
+        self.assertTrue(is_valid)
 
 if __name__ == "__main__":
     unittest.main()
