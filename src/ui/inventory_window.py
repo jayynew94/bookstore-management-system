@@ -61,28 +61,29 @@ class InventoryWindow(ttk.Frame):
 
         self.tree.bind("<<TreeviewSelect>>", self.handle_selection)
 
+        # SEARCH SECTION
         search_frame = ttk.LabelFrame(content_frame, text="Search Inventory", padding=12)
-        search_frame.grid(row=1, column=0, sticky="ew", pady=(12, 0))
+        search_frame.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(12, 0))
         search_frame.columnconfigure(1, weight=1)
 
-        ttk.Label(search_frame, text="Title Keyword:").grid(
-            row=0, column=0, sticky="w", padx=(0, 8)
-        )
+        # Title search
+        ttk.Label(search_frame, text="Title Keyword:").grid(row=0, column=0, sticky="w", padx=(0, 8), pady=4)
 
         self.search_entry = ttk.Entry(search_frame)
-        self.search_entry.grid(row=0, column=1, sticky="ew", padx=(0, 8))
+        self.search_entry.grid(row=0, column=1, sticky="ew", padx=(0, 8), pady=4)
 
-        ttk.Button(
-            search_frame,
-            text="Search",
-            command=self.search_by_title
-        ).grid(row=0, column=2, padx=(0, 8))
+        ttk.Button(search_frame, text="Search Title", command=self.search_by_title).grid(row=0, column=2, padx=(0, 8), pady=4)
 
-        ttk.Button(
-            search_frame,
-            text="Show All",
-            command=self.show_all_books
-        ).grid(row=0, column=3)
+        # Author search
+        ttk.Label(search_frame, text="Author Keyword:").grid(row=1, column=0, sticky="w", padx=(0, 8), pady=4)
+
+        self.author_search_entry = ttk.Entry(search_frame)
+        self.author_search_entry.grid(row=1, column=1, sticky="ew", padx=(0, 8), pady=4)
+
+        ttk.Button(search_frame, text="Search Author", command=self.search_by_author).grid(row=1, column=2, padx=(0, 8), pady=4)
+
+        # Show all button
+        ttk.Button(search_frame, text="Show All", command=self.show_all_books).grid(row=0, column=3, rowspan=2, padx=(0, 8), pady=4, sticky="ns")
 
         self.status_var = tk.StringVar(value="")
         ttk.Label(self, textvariable=self.status_var, foreground="#b42318").grid(
@@ -154,9 +155,39 @@ class InventoryWindow(ttk.Frame):
 
     def show_all_books(self):
         """
-        Reset search and show all books.
+        Reset search fields and show all books.
         """
         self.search_entry.delete(0, "end")
+        self.author_search_entry.delete(0, "end")
         self.refresh_books()
         self.status_var.set("Showing all books.")
         self.selected_book_id = None
+        
+        
+        
+    def search_by_author(self):
+        """
+        Search inventory using an author keyword.
+        The search is case-insensitive and matches partial author names.
+        """
+        keyword = self.author_search_entry.get().strip().lower()
+
+        if not keyword:
+            self.status_var.set("Enter an author name to search.")
+            return
+
+        matching_books = []
+
+        for book in self.inventory_service.list_books():
+            if keyword in book.author.lower():
+                matching_books.append(book)
+
+        self.refresh_books(matching_books)
+
+        if matching_books:
+            self.status_var.set(f"Found {len(matching_books)} book(s) by matching author.")
+        else:
+            self.status_var.set("No books found for that author.")
+
+        self.selected_book_id = None
+    
