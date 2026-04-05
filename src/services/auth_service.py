@@ -4,9 +4,21 @@ from __future__ import annotations
 class AuthService:
     def __init__(self):
         self._users = {
-            "manager": {"password": "securepass", "role": "staff", "display_name": "Store Manager"},
-            "staff1": {"password": "books123", "role": "staff", "display_name": "Inventory Staff"},
-            "customer1": {"password": "reader123", "role": "customer", "display_name": "Customer One"},
+            "manager": {
+                "password": "securepass",
+                "role": "staff",
+                "display_name": "Store Manager",
+            },
+            "staff1": {
+                "password": "books123",
+                "role": "staff",
+                "display_name": "Inventory Staff",
+            },
+            "customer1": {
+                "password": "reader123",
+                "role": "customer",
+                "display_name": "Customer One",
+            },
         }
 
     def authenticate(self, username: str, password: str) -> tuple[bool, str, dict | None]:
@@ -32,7 +44,7 @@ class AuthService:
 
     def demo_users(self) -> list[tuple[str, str]]:
         return [
-            ("manager", "staff"),
-            ("staff1", "staff"),
-            ("customer1", "customer"),
+            ("manager", "securepass"),
+            ("staff1", "books123"),
+            ("customer1", "reader123"),
         ]
