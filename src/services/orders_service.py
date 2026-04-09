@@ -22,6 +22,12 @@ class OrdersService:
     def list_orders(self) -> list[Order]:
         return self._orders[:]
 
+    def get_order(self, order_id: str) -> Order:
+        for order in self._orders:
+            if order.order_id == order_id:
+                return order
+        raise ValueError("Selected order could not be found.")
+
     def add_customer(self, name: str, email: str) -> Customer:
         name = name.strip()
         email = email.strip().lower()
@@ -37,7 +43,20 @@ class OrdersService:
         self._persist()
         return customer
 
-    def place_order(self, customer_id: str, book_id: str, quantity: int) -> Order:
+    def ensure_customer(self, name: str, email: str) -> Customer:
+        email = email.strip().lower()
+        for customer in self._customers:
+            if customer.email == email:
+                return customer
+        return self.add_customer(name, email)
+
+    def place_order(
+        self,
+        customer_id: str,
+        book_id: str,
+        quantity: int,
+        status: str = "Completed",
+    ) -> Order:
         if quantity <= 0:
             raise ValueError("Order quantity must be greater than 0.")
 
@@ -52,6 +71,7 @@ class OrdersService:
             book_title=updated_book.title,
             quantity=quantity,
             total=round(book.price * quantity, 2),
+            status=status,
         )
         self._orders.append(order)
         self._persist()
@@ -69,7 +89,25 @@ class OrdersService:
     def total_revenue(self) -> float:
         return round(sum(order.total for order in self._orders), 2)
 
+    def filter_orders(
+        self,
+        start_date: str = "",
+        end_date: str = "",
+        customer_id: str = "",
+    ) -> list[Order]:
+        orders = self._orders[:]
+
+        if customer_id:
+            orders = [order for order in orders if order.customer_id == customer_id]
+
+        if start_date:
+            orders = [order for order in orders if order.created_at >= start_date]
+
+        if end_date:
+            orders = [order for order in orders if order.created_at <= end_date]
+
+        return orders
+
     def _persist(self):
         if self._save_callback is not None:
             self._save_callback()
-

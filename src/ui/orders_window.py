@@ -8,9 +8,22 @@ class OrdersWindow(ttk.Frame):
         self.inventory_service = inventory_service
         self.orders_service = orders_service
         self.on_back = on_back
+        self.selected_order_id = None
+        self.sales_status_var = tk.StringVar(value="Showing all recorded sales.")
+        self.start_date_var = tk.StringVar(value="")
+        self.end_date_var = tk.StringVar(value="")
+        self.detail_vars = {
+            "order_id": tk.StringVar(value="No sale selected"),
+            "customer": tk.StringVar(value="-"),
+            "book": tk.StringVar(value="-"),
+            "quantity": tk.StringVar(value="-"),
+            "total": tk.StringVar(value="-"),
+            "status": tk.StringVar(value="-"),
+            "created_at": tk.StringVar(value="-"),
+        }
 
         self.columnconfigure((0, 1), weight=1)
-        self.rowconfigure(1, weight=1)
+        self.rowconfigure(2, weight=1)
 
         header_frame = ttk.Frame(self)
         header_frame.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 18))
@@ -53,11 +66,11 @@ class OrdersWindow(ttk.Frame):
             row=2, column=0, columnspan=2, sticky="ew", pady=(8, 0)
         )
 
-        orders_frame = ttk.LabelFrame(self, text="Place and Review Orders", padding=12)
-        orders_frame.grid(row=1, column=1, sticky="nsew")
-        orders_frame.columnconfigure(0, weight=1)
+        order_entry_frame = ttk.LabelFrame(self, text="Create Sale", padding=12)
+        order_entry_frame.grid(row=1, column=1, sticky="ew")
+        order_entry_frame.columnconfigure(0, weight=1)
 
-        order_form = ttk.Frame(orders_frame)
+        order_form = ttk.Frame(order_entry_frame)
         order_form.grid(row=0, column=0, sticky="ew")
         order_form.columnconfigure(1, weight=1)
 
@@ -80,13 +93,43 @@ class OrdersWindow(ttk.Frame):
         )
 
         self.status_var = tk.StringVar(value="")
-        ttk.Label(orders_frame, textvariable=self.status_var, foreground="#b42318").grid(
-            row=1, column=0, sticky="w", pady=(12, 8)
+        ttk.Label(order_entry_frame, textvariable=self.status_var, foreground="#b42318").grid(
+            row=1, column=0, sticky="w", pady=(12, 0)
         )
 
+        sales_frame = ttk.LabelFrame(self, text="Sales History", padding=12)
+        sales_frame.grid(row=2, column=0, columnspan=2, sticky="nsew", pady=(18, 0))
+        sales_frame.columnconfigure(0, weight=3)
+        sales_frame.columnconfigure(1, weight=2)
+        sales_frame.rowconfigure(1, weight=1)
+
+        filter_frame = ttk.Frame(sales_frame)
+        filter_frame.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 12))
+        filter_frame.columnconfigure(1, weight=1)
+        filter_frame.columnconfigure(3, weight=1)
+
+        ttk.Label(filter_frame, text="Start Date").grid(row=0, column=0, sticky="w", padx=(0, 8))
+        ttk.Entry(filter_frame, textvariable=self.start_date_var).grid(row=0, column=1, sticky="ew")
+        ttk.Label(filter_frame, text="End Date").grid(row=0, column=2, sticky="w", padx=(12, 8))
+        ttk.Entry(filter_frame, textvariable=self.end_date_var).grid(row=0, column=3, sticky="ew")
+        ttk.Button(filter_frame, text="Apply Filter", command=self.apply_sales_filter).grid(
+            row=0, column=4, padx=(12, 0)
+        )
+        ttk.Button(filter_frame, text="Clear", command=self.clear_sales_filter).grid(
+            row=0, column=5, padx=(8, 0)
+        )
+        ttk.Label(filter_frame, textvariable=self.sales_status_var).grid(
+            row=1, column=0, columnspan=6, sticky="w", pady=(10, 0)
+        )
+
+        sales_table_frame = ttk.Frame(sales_frame)
+        sales_table_frame.grid(row=1, column=0, sticky="nsew", padx=(0, 12))
+        sales_table_frame.columnconfigure(0, weight=1)
+        sales_table_frame.rowconfigure(0, weight=1)
+
         self.orders_tree = ttk.Treeview(
-            orders_frame,
-            columns=("customer", "book", "quantity", "total"),
+            sales_table_frame,
+            columns=("customer", "book", "quantity", "total", "status", "date"),
             show="headings",
             height=9,
         )
@@ -95,10 +138,35 @@ class OrdersWindow(ttk.Frame):
             ("book", "Book", 160),
             ("quantity", "Qty", 60),
             ("total", "Total", 90),
+            ("status", "Status", 100),
+            ("date", "Date", 100),
         ]:
             self.orders_tree.heading(column, text=heading)
             self.orders_tree.column(column, width=width, anchor="w")
-        self.orders_tree.grid(row=2, column=0, sticky="nsew")
+        self.orders_tree.grid(row=0, column=0, sticky="nsew")
+        self.orders_tree.bind("<<TreeviewSelect>>", self.handle_order_selection)
+
+        detail_frame = ttk.LabelFrame(sales_frame, text="Sale Detail View", padding=12)
+        detail_frame.grid(row=1, column=1, sticky="nsew")
+        detail_frame.columnconfigure(1, weight=1)
+
+        for row_index, (label, key) in enumerate(
+            [
+                ("Order ID", "order_id"),
+                ("Customer", "customer"),
+                ("Book", "book"),
+                ("Quantity", "quantity"),
+                ("Total", "total"),
+                ("Status", "status"),
+                ("Date", "created_at"),
+            ]
+        ):
+            ttk.Label(detail_frame, text=f"{label}:").grid(
+                row=row_index, column=0, sticky="nw", padx=(0, 10), pady=5
+            )
+            ttk.Label(detail_frame, textvariable=self.detail_vars[key], wraplength=240).grid(
+                row=row_index, column=1, sticky="nw", pady=5
+            )
 
         self._customer_options = {}
         self._book_options = {}
@@ -134,13 +202,14 @@ class OrdersWindow(ttk.Frame):
 
         try:
             quantity = int(self.quantity_entry.get())
-            self.orders_service.place_order(customer_id, book_id, quantity)
+            self.orders_service.place_order(customer_id, book_id, quantity, status="Completed")
         except ValueError as error:
             self.status_var.set(str(error))
             return
 
         self.quantity_entry.delete(0, "end")
         self.status_var.set("Order placed successfully.")
+        self.clear_sales_filter()
         self.refresh_data()
 
     def _refresh_customers(self):
@@ -173,13 +242,68 @@ class OrdersWindow(ttk.Frame):
         else:
             self.book_var.set("")
 
-    def _refresh_orders(self):
+    def _refresh_orders(self, orders=None):
         for item in self.orders_tree.get_children():
             self.orders_tree.delete(item)
 
-        for order in self.orders_service.list_orders():
+        orders = self.orders_service.list_orders() if orders is None else orders
+        for order in orders:
             self.orders_tree.insert(
                 "",
                 "end",
-                values=(order.customer_name, order.book_title, order.quantity, f"${order.total:.2f}"),
+                iid=order.order_id,
+                values=(
+                    order.customer_name,
+                    order.book_title,
+                    order.quantity,
+                    f"${order.total:.2f}",
+                    order.status,
+                    order.created_at,
+                ),
             )
+
+    def handle_order_selection(self, _event=None):
+        selected = self.orders_tree.selection()
+        if not selected:
+            self.selected_order_id = None
+            self._clear_order_detail()
+            return
+
+        self.selected_order_id = selected[0]
+        order = self.orders_service.get_order(self.selected_order_id)
+        self.detail_vars["order_id"].set(order.order_id)
+        self.detail_vars["customer"].set(order.customer_name)
+        self.detail_vars["book"].set(order.book_title)
+        self.detail_vars["quantity"].set(str(order.quantity))
+        self.detail_vars["total"].set(f"${order.total:.2f}")
+        self.detail_vars["status"].set(order.status)
+        self.detail_vars["created_at"].set(order.created_at)
+
+    def apply_sales_filter(self):
+        orders = self.orders_service.filter_orders(
+            self.start_date_var.get(),
+            self.end_date_var.get(),
+        )
+        self._refresh_orders(orders)
+        self._clear_order_detail()
+        self.selected_order_id = None
+        if orders:
+            self.sales_status_var.set(f"Showing {len(orders)} filtered sale(s).")
+        else:
+            self.sales_status_var.set("No sales found.")
+
+    def clear_sales_filter(self):
+        self.start_date_var.set("")
+        self.end_date_var.set("")
+        self.sales_status_var.set("Showing all recorded sales.")
+        self._refresh_orders()
+        self._clear_order_detail()
+
+    def _clear_order_detail(self):
+        self.detail_vars["order_id"].set("No sale selected")
+        self.detail_vars["customer"].set("-")
+        self.detail_vars["book"].set("-")
+        self.detail_vars["quantity"].set("-")
+        self.detail_vars["total"].set("-")
+        self.detail_vars["status"].set("-")
+        self.detail_vars["created_at"].set("-")

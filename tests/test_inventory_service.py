@@ -67,7 +67,7 @@ class InventoryServiceTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "Not enough stock"):
             service.reduce_stock(book.book_id, 3)
-    
+
     def test_get_book_invalid_id_raises_error(self):
         service = InventoryService([])
         with self.assertRaises(ValueError):
@@ -79,6 +79,32 @@ class InventoryServiceTests(unittest.TestCase):
 
         updated = service.reduce_stock(book.book_id, 2)
         self.assertEqual(updated.quantity, 3)
-        
+
+    def test_get_book_returns_single_record_details(self):
+        book = Book("Dune", "Frank Herbert", "Science Fiction", 14.5, 2)
+        service = InventoryService([book])
+
+        selected = service.get_book(book.book_id)
+
+        self.assertEqual(selected.title, "Dune")
+        self.assertEqual(selected.author, "Frank Herbert")
+
+    def test_search_books_by_isbn_returns_matches(self):
+        matching = Book("Dune", "Frank Herbert", "Science Fiction", 14.5, 2, "9780441172719")
+        other = Book("The Hobbit", "J.R.R. Tolkien", "Fantasy", 13.25, 4, "9780547928227")
+        service = InventoryService([matching, other])
+
+        results = service.search_books("2719", "isbn")
+
+        self.assertEqual([book.title for book in results], ["Dune"])
+
+    def test_search_books_returns_empty_list_when_no_results(self):
+        service = InventoryService([Book("Dune", "Frank Herbert", "Science Fiction", 14.5, 2)])
+
+        results = service.search_books("missing", "isbn")
+
+        self.assertEqual(results, [])
+
+
 if __name__ == "__main__":
     unittest.main()
