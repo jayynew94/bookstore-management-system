@@ -8,16 +8,19 @@ class AuthService:
                 "password": "securepass",
                 "role": "staff",
                 "display_name": "Store Manager",
+                "email": "manager@bookstore.local",
             },
             "staff1": {
                 "password": "books123",
                 "role": "staff",
                 "display_name": "Inventory Staff",
+                "email": "staff1@bookstore.local",
             },
             "customer1": {
                 "password": "reader123",
                 "role": "customer",
                 "display_name": "Customer One",
+                "email": "customer1@bookstore.local",
             },
         }
 
@@ -39,6 +42,7 @@ class AuthService:
                 "username": username,
                 "display_name": user["display_name"],
                 "role": user["role"],
+                "email": user["email"],
             },
         )
 

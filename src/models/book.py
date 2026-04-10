@@ -12,6 +12,7 @@ class Book:
     genre: str
     price: float
     quantity: int
+    isbn: str = ""
     book_id: str = field(default_factory=lambda: uuid.uuid4().hex)
 
     def __str__(self):
