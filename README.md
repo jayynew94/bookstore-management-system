@@ -1,10 +1,10 @@
 # Bookstore Management System
 
 ## Team Members
-- Jeremy N
-- Danielle N
-- Kyle W
-- Aeryn W
+- Jeremy N - Scrum Master
+- Danielle N - QA tester
+- Kyle W - QA tester
+- Aeryn W - Developer
 
 ## Project Overview
 This project is a desktop Bookstore Management System built with Python and Tkinter. It includes a login screen, dashboard, inventory management workflow, customer management, order placement, and JSON-based local persistence.
