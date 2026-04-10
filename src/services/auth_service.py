@@ -4,9 +4,24 @@ from __future__ import annotations
 class AuthService:
     def __init__(self):
         self._users = {
-            "manager": {"password": "securepass", "role": "staff", "display_name": "Store Manager"},
-            "staff1": {"password": "books123", "role": "staff", "display_name": "Inventory Staff"},
-            "customer1": {"password": "reader123", "role": "customer", "display_name": "Customer One"},
+            "manager": {
+                "password": "securepass",
+                "role": "staff",
+                "display_name": "Store Manager",
+                "email": "manager@bookstore.local",
+            },
+            "staff1": {
+                "password": "books123",
+                "role": "staff",
+                "display_name": "Inventory Staff",
+                "email": "staff1@bookstore.local",
+            },
+            "customer1": {
+                "password": "reader123",
+                "role": "customer",
+                "display_name": "Customer One",
+                "email": "customer1@bookstore.local",
+            },
         }
 
     def authenticate(self, username: str, password: str) -> tuple[bool, str, dict | None]:
@@ -27,12 +42,13 @@ class AuthService:
                 "username": username,
                 "display_name": user["display_name"],
                 "role": user["role"],
+                "email": user["email"],
             },
         )
 
     def demo_users(self) -> list[tuple[str, str]]:
         return [
-            ("manager", "staff"),
-            ("staff1", "staff"),
-            ("customer1", "customer"),
+            ("manager", "securepass"),
+            ("staff1", "books123"),
+            ("customer1", "reader123"),
         ]

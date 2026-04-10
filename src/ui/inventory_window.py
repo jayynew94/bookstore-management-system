@@ -14,10 +14,14 @@ class InventoryWindow(ttk.Frame):
             "genre": tk.StringVar(value="-"),
             "price": tk.StringVar(value="-"),
             "quantity": tk.StringVar(value="-"),
+            "isbn": tk.StringVar(value="-"),
         }
+        self.search_var = tk.StringVar(value="")
+        self.search_field_var = tk.StringVar(value="isbn")
+        self.results_var = tk.StringVar(value="Showing all books.")
 
         self.columnconfigure(0, weight=1)
-        self.rowconfigure(1, weight=1)
+        self.rowconfigure(2, weight=1)
 
         header_frame = ttk.Frame(self)
         header_frame.grid(row=0, column=0, sticky="ew", pady=(0, 18))
@@ -32,8 +36,32 @@ class InventoryWindow(ttk.Frame):
             row=0, column=1, sticky="e"
         )
 
+        search_frame = ttk.LabelFrame(self, text="Search Inventory", padding=12)
+        search_frame.grid(row=1, column=0, sticky="ew", pady=(0, 18))
+        search_frame.columnconfigure(3, weight=1)
+
+        ttk.Label(search_frame, text="Search By").grid(row=0, column=0, sticky="w", padx=(0, 8))
+        ttk.Combobox(
+            search_frame,
+            textvariable=self.search_field_var,
+            values=("title", "author", "isbn"),
+            state="readonly",
+            width=12,
+        ).grid(row=0, column=1, sticky="w")
+        ttk.Label(search_frame, text="Keyword").grid(row=0, column=2, sticky="w", padx=(18, 8))
+        ttk.Entry(search_frame, textvariable=self.search_var).grid(row=0, column=3, sticky="ew")
+        ttk.Button(search_frame, text="Search", command=self.apply_search).grid(
+            row=0, column=4, padx=(12, 0)
+        )
+        ttk.Button(search_frame, text="Clear", command=self.clear_search).grid(
+            row=0, column=5, padx=(8, 0)
+        )
+        ttk.Label(search_frame, textvariable=self.results_var).grid(
+            row=1, column=0, columnspan=6, sticky="w", pady=(10, 0)
+        )
+
         content_frame = ttk.Frame(self)
-        content_frame.grid(row=1, column=0, sticky="nsew")
+        content_frame.grid(row=2, column=0, sticky="nsew")
         content_frame.columnconfigure(0, weight=3)
         content_frame.columnconfigure(1, weight=2)
         content_frame.rowconfigure(0, weight=1)
@@ -72,6 +100,7 @@ class InventoryWindow(ttk.Frame):
                 ("Genre", "genre"),
                 ("Price", "price"),
                 ("Quantity", "quantity"),
+                ("ISBN", "isbn"),
             ]
         ):
             ttk.Label(detail_frame, text=f"{label}:").grid(
@@ -89,7 +118,7 @@ class InventoryWindow(ttk.Frame):
             ).grid(row=row_index, column=1, sticky="nw", pady=6)
 
         form_frame = ttk.LabelFrame(self, text="Book Details", padding=12)
-        form_frame.grid(row=2, column=0, sticky="ew", pady=(18, 0))
+        form_frame.grid(row=3, column=0, sticky="ew", pady=(18, 0))
         form_frame.columnconfigure(1, weight=1)
         form_frame.columnconfigure(3, weight=1)
 
@@ -100,6 +129,7 @@ class InventoryWindow(ttk.Frame):
             ("Genre", "genre"),
             ("Price", "price"),
             ("Quantity", "quantity"),
+            ("ISBN", "isbn"),
         ]
 
         for index, (label, key) in enumerate(fields):
@@ -131,11 +161,12 @@ class InventoryWindow(ttk.Frame):
 
         self.refresh_books()
 
-    def refresh_books(self):
+    def refresh_books(self, books=None):
         for item in self.tree.get_children():
             self.tree.delete(item)
 
-        for book in self.inventory_service.list_books():
+        books = self.inventory_service.list_books() if books is None else books
+        for book in books:
             self.tree.insert(
                 "",
                 "end",
@@ -163,6 +194,8 @@ class InventoryWindow(ttk.Frame):
         self.inputs["price"].insert(0, f"{book.price:.2f}")
         self.inputs["quantity"].delete(0, "end")
         self.inputs["quantity"].insert(0, str(book.quantity))
+        self.inputs["isbn"].delete(0, "end")
+        self.inputs["isbn"].insert(0, book.isbn)
         self.status_var.set(f"Selected '{book.title}'.")
 
     def add_book(self):
@@ -174,7 +207,7 @@ class InventoryWindow(ttk.Frame):
 
         self._clear_form()
         self.status_var.set("Book added successfully.")
-        self.refresh_books()
+        self.clear_search()
 
     def update_book(self):
         if not self.selected_book_id:
@@ -188,7 +221,7 @@ class InventoryWindow(ttk.Frame):
             return
 
         self.status_var.set("Book updated successfully.")
-        self.refresh_books()
+        self.clear_search()
         self.tree.selection_set(self.selected_book_id)
         self.handle_selection()
 
@@ -207,7 +240,7 @@ class InventoryWindow(ttk.Frame):
         self.selected_book_id = None
         self._clear_detail_panel()
         self.status_var.set("Book deleted successfully.")
-        self.refresh_books()
+        self.clear_search()
 
     def _form_values(self):
         return (
@@ -216,6 +249,7 @@ class InventoryWindow(ttk.Frame):
             self.inputs["genre"].get(),
             float(self.inputs["price"].get()),
             int(self.inputs["quantity"].get()),
+            self.inputs["isbn"].get(),
         )
 
     def _clear_form(self):
@@ -228,6 +262,7 @@ class InventoryWindow(ttk.Frame):
         self.detail_vars["genre"].set(book.genre)
         self.detail_vars["price"].set(f"${book.price:.2f}")
         self.detail_vars["quantity"].set(str(book.quantity))
+        self.detail_vars["isbn"].set(book.isbn or "-")
 
     def _clear_detail_panel(self):
         self.detail_vars["title"].set("No book selected")
@@ -235,3 +270,24 @@ class InventoryWindow(ttk.Frame):
         self.detail_vars["genre"].set("-")
         self.detail_vars["price"].set("-")
         self.detail_vars["quantity"].set("-")
+        self.detail_vars["isbn"].set("-")
+
+    def apply_search(self):
+        books = self.inventory_service.search_books(
+            self.search_var.get(),
+            self.search_field_var.get(),
+        )
+        self.refresh_books(books)
+        self.selected_book_id = None
+        self._clear_detail_panel()
+        if books:
+            self.results_var.set(f"Showing {len(books)} matching result(s).")
+        else:
+            self.results_var.set("No results found.")
+
+    def clear_search(self):
+        self.search_var.set("")
+        self.results_var.set("Showing all books.")
+        self.refresh_books()
+        self.selected_book_id = None
+        self._clear_detail_panel()

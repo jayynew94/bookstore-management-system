@@ -37,6 +37,7 @@ class BookstoreApp:
         self.current_frame = None
         self.username = ""
         self.current_role = ""
+        self.current_customer_id = ""
 
         self.save_data()
         self.show_login()
@@ -51,6 +52,7 @@ class BookstoreApp:
     def show_login(self):
         self.username = ""
         self.current_role = ""
+        self.current_customer_id = ""
         self._swap_frame(LoginWindow, self.auth_service, self.handle_login_success)
 
     def handle_login_success(self, user: dict):
@@ -59,6 +61,8 @@ class BookstoreApp:
         if self.current_role == "staff":
             self.show_dashboard()
             return
+        customer = self.orders_service.ensure_customer(user["display_name"], user["email"])
+        self.current_customer_id = customer.customer_id
         self.show_customer_view()
 
     def show_dashboard(self):
@@ -96,6 +100,8 @@ class BookstoreApp:
             CustomerWindow,
             self.username,
             self.inventory_service,
+            self.orders_service,
+            self.current_customer_id,
             self.show_login,
         )
 

@@ -12,7 +12,17 @@ class JsonDataStoreTests(unittest.TestCase):
             path = Path(temp_dir) / "bookstore_data.json"
             store = JsonDataStore(path)
 
-            books = [Book("Dune", "Frank Herbert", "Science Fiction", 14.5, 8, "book-1")]
+            books = [
+                Book(
+                    "Dune",
+                    "Frank Herbert",
+                    "Science Fiction",
+                    14.5,
+                    8,
+                    "9780441172719",
+                    "book-1",
+                )
+            ]
             customers = [Customer("Casey", "casey@example.com", "customer-1")]
             orders = [
                 Order(
@@ -22,6 +32,8 @@ class JsonDataStoreTests(unittest.TestCase):
                     "Dune",
                     2,
                     29.0,
+                    "Completed",
+                    "2026-04-09",
                     "order-1",
                 )
             ]

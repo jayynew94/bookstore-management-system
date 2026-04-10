@@ -26,10 +26,12 @@ class InventoryService:
         genre: str,
         price: float,
         quantity: int,
+        isbn: str = "",
     ) -> Book:
         title = title.strip()
         author = author.strip()
         genre = genre.strip()
+        isbn = isbn.strip()
 
         if not title or not author or not genre:
             raise ValueError("Title, author, and genre are required.")
@@ -46,6 +48,7 @@ class InventoryService:
             genre=genre,
             price=round(price, 2),
             quantity=quantity,
+            isbn=isbn,
         )
         self._books.append(book)
         self._persist()
@@ -59,6 +62,7 @@ class InventoryService:
         genre: str,
         price: float,
         quantity: int,
+        isbn: str = "",
     ) -> Book:
         book = self.get_book(book_id)
         updated_book = replace(
@@ -68,6 +72,7 @@ class InventoryService:
             genre=genre.strip(),
             price=round(price, 2),
             quantity=quantity,
+            isbn=isbn.strip(),
         )
         self._validate(updated_book)
         self._replace_book(updated_book)
@@ -100,6 +105,19 @@ class InventoryService:
     def inventory_value(self) -> float:
         return round(sum(book.price * book.quantity for book in self._books), 2)
 
+    def search_books(self, query: str, search_field: str) -> list[Book]:
+        query = query.strip().lower()
+        if not query:
+            return self.list_books()
+
+        if search_field not in {"title", "author", "isbn"}:
+            raise ValueError("Search field must be title, author, or isbn.")
+
+        def matches(book: Book) -> bool:
+            return query in getattr(book, search_field).lower()
+
+        return [book for book in self.list_books() if matches(book)]
+
     def _replace_book(self, updated_book: Book):
         for index, book in enumerate(self._books):
             if book.book_id == updated_book.book_id:
@@ -122,8 +140,8 @@ class InventoryService:
     @staticmethod
     def _default_books() -> list[Book]:
         return [
-            Book("Atomic Habits", "James Clear", "Self-Help", 18.99, 12),
-            Book("Dune", "Frank Herbert", "Science Fiction", 14.50, 8),
-            Book("The Hobbit", "J.R.R. Tolkien", "Fantasy", 13.25, 10),
-            Book("The Martian", "Andy Weir", "Science Fiction", 16.75, 6),
+            Book("Atomic Habits", "James Clear", "Self-Help", 18.99, 12, "9780735211292"),
+            Book("Dune", "Frank Herbert", "Science Fiction", 14.50, 8, "9780441172719"),
+            Book("The Hobbit", "J.R.R. Tolkien", "Fantasy", 13.25, 10, "9780547928227"),
+            Book("The Martian", "Andy Weir", "Science Fiction", 16.75, 6, "9780804139021"),
         ]
