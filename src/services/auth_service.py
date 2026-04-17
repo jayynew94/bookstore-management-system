@@ -4,6 +4,12 @@ from __future__ import annotations
 class AuthService:
     def __init__(self):
         self._users = {
+            "admin": {
+                "password": "admin123",
+                "role": "admin",
+                "display_name": "System Admin",
+                "email": "admin@bookstore.local",
+            },
             "manager": {
                 "password": "securepass",
                 "role": "staff",
@@ -48,6 +54,7 @@ class AuthService:
 
     def demo_users(self) -> list[tuple[str, str]]:
         return [
+            ("admin", "admin123"),
             ("manager", "securepass"),
             ("staff1", "books123"),
             ("customer1", "reader123"),
