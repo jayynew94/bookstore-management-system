@@ -19,12 +19,19 @@ class AuthServiceTests(unittest.TestCase):
         self.assertEqual(message, "Invalid username or password.")
         self.assertIsNone(user)
 
+    def test_accepts_valid_admin_credentials(self):
+        is_valid, message, user = self.service.authenticate("admin", "admin123")
+        self.assertTrue(is_valid)
+        self.assertEqual(message, "")
+        self.assertEqual(user["role"], "admin")
+        self.assertEqual(user["display_name"], "System Admin")
+
     def test_accepts_valid_staff_credentials(self):
-        is_valid, message, user = self.service.authenticate("manager", "securepass")
+        is_valid, message, user = self.service.authenticate("staff1", "books123")
         self.assertTrue(is_valid)
         self.assertEqual(message, "")
         self.assertEqual(user["role"], "staff")
-        self.assertEqual(user["display_name"], "Store Manager")
+        self.assertEqual(user["display_name"], "Inventory Staff")
 
     def test_accepts_valid_customer_credentials(self):
         is_valid, message, user = self.service.authenticate("customer1", "reader123")

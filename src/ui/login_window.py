@@ -1,16 +1,9 @@
 import tkinter as tk
 from tkinter import messagebox
 
-from models.book import Book
-from services.book_service import BookService
+from services.auth_service import AuthService
+from services.inventory_service import InventoryService
 from ui.inventory_window import InventoryWindow
-
-
-USERS = {
-    "admin": {"password": "admin123", "role": "Admin"},
-    "staff": {"password": "staff123", "role": "Staff"},
-    "customer": {"password": "cust123", "role": "Customer"},
-}
 
 
 class LoginApp:
@@ -22,6 +15,10 @@ class LoginApp:
         self.root = root
         self.root.title("Book Management System - Login")
         self.root.geometry("420x260")
+        self.auth_service = AuthService()
+        # Keep one shared inventory service for the session so admin/staff CRUD
+        # actions are working against the same in-memory catalog after login.
+        self.inventory_service = InventoryService()
 
         tk.Label(self.root, text="Login", font=("Arial", 16)).pack(pady=10)
 
@@ -37,7 +34,7 @@ class LoginApp:
 
         tk.Label(
             self.root,
-            text="Demo logins: admin/admin123, staff/staff123, customer/cust123",
+            text="Demo logins: admin/admin123, staff1/books123, customer1/reader123",
             wraplength=350,
             justify="center"
         ).pack(pady=10)
@@ -57,17 +54,25 @@ class LoginApp:
             messagebox.showwarning("Error", "Password is required")
             return
 
-        if username not in USERS or USERS[username]["password"] != password:
-            messagebox.showerror("Error", "Invalid credentials")
+        is_valid, message, user = self.auth_service.authenticate(username, password)
+        if not is_valid:
+            messagebox.showerror("Error", message)
             return
 
-        role = USERS[username]["role"]
-        messagebox.showinfo("Success", f"Welcome {username} ({role})")
+        role = user["role"]
+        display_name = user["display_name"]
+        messagebox.showinfo("Success", f"Welcome {display_name} ({role.title()})")
 
-        if role in ["Admin", "Staff"]:
+        # Admin and staff share the same catalog management permissions. This is
+        # the role gate that controls who can add, edit, and delete books.
+        if self._can_manage_books(role):
             self.open_inventory_window()
         else:
-            self.open_customer_dashboard(username)
+            self.open_customer_dashboard(display_name)
+
+    @staticmethod
+    def _can_manage_books(role):
+        return role in {"admin", "staff"}
 
     def open_inventory_window(self):
         """
@@ -76,16 +81,9 @@ class LoginApp:
         for widget in self.root.winfo_children():
             widget.destroy()
 
-        inventory_service = BookService()
-
-        inventory_service.add_book(Book("Python Basics", "John Smith", "Programming", 29.99, 10))
-        inventory_service.add_book(Book("Advanced Python Programming", "Jane Doe", "Programming", 39.99, 5))
-        inventory_service.add_book(Book("Database Systems", "Mike Brown", "Technology", 45.50, 8))
-        inventory_service.add_book(Book("Bookstore Operations", "Sarah Green", "Business", 22.75, 12))
-
         inventory_window = InventoryWindow(
             self.root,
-            inventory_service,
+            self.inventory_service,
             self.show_login_screen
         )
         inventory_window.pack(fill="both", expand=True)
