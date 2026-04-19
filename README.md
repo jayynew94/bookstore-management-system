@@ -2,7 +2,6 @@
 
 ## Team Members
 - Jeremy N - Scrum Master
-- Danielle N - QA tester
 - Kyle W - QA tester
 - Aeryn W - Developer
 
