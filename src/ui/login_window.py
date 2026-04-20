@@ -3,6 +3,8 @@ from tkinter import messagebox
 
 from services.auth_service import AuthService
 from services.inventory_service import InventoryService
+from services.orders_service import OrdersService
+from ui.customer_window import CustomerWindow
 from ui.inventory_window import InventoryWindow
 
 
@@ -11,14 +13,15 @@ class LoginApp:
     Creates the login window for the bookstore system.
     """
 
-    def __init__(self, root):
+    def __init__(self, root, inventory_service=None, orders_service=None):
         self.root = root
         self.root.title("Book Management System - Login")
         self.root.geometry("420x260")
         self.auth_service = AuthService()
         # Keep one shared inventory service for the session so admin/staff CRUD
         # actions are working against the same in-memory catalog after login.
-        self.inventory_service = InventoryService()
+        self.inventory_service = inventory_service or InventoryService()
+        self.orders_service = orders_service or OrdersService(self.inventory_service)
 
         tk.Label(self.root, text="Login", font=("Arial", 16)).pack(pady=10)
 
@@ -61,6 +64,7 @@ class LoginApp:
 
         role = user["role"]
         display_name = user["display_name"]
+        email = user["email"]
         messagebox.showinfo("Success", f"Welcome {display_name} ({role.title()})")
 
         # Admin and staff share the same catalog management permissions. This is
@@ -68,7 +72,7 @@ class LoginApp:
         if self._can_manage_books(role):
             self.open_inventory_window()
         else:
-            self.open_customer_dashboard(display_name)
+            self.open_customer_dashboard(display_name, email)
 
     @staticmethod
     def _can_manage_books(role):
@@ -95,25 +99,23 @@ class LoginApp:
         for widget in self.root.winfo_children():
             widget.destroy()
 
-        login_app = LoginApp(self.root)
+        LoginApp(self.root, self.inventory_service, self.orders_service)
 
-    def open_customer_dashboard(self, username):
+    def open_customer_dashboard(self, username, email):
         """
-        Open a simple customer dashboard.
+        Open the customer dashboard using the same shared inventory data that
+        staff manages, so new books appear immediately for customers too.
         """
-        dashboard = tk.Toplevel(self.root)
-        dashboard.title("Customer Dashboard")
-        dashboard.geometry("350x180")
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
-        tk.Label(
-            dashboard,
-            text=f"Welcome, {username}",
-            font=("Arial", 14, "bold")
-        ).pack(pady=15)
-
-        tk.Label(
-            dashboard,
-            text="Customers can browse books and manage purchases.",
-            wraplength=280,
-            justify="center"
-        ).pack(pady=10)
+        customer = self.orders_service.ensure_customer(username, email)
+        customer_window = CustomerWindow(
+            self.root,
+            username,
+            self.inventory_service,
+            self.orders_service,
+            customer.customer_id,
+            self.show_login_screen,
+        )
+        customer_window.pack(fill="both", expand=True)
