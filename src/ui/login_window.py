@@ -13,11 +13,11 @@ class LoginApp:
     Creates the login window for the bookstore system.
     """
 
-    def __init__(self, root, inventory_service=None, orders_service=None):
+    def __init__(self, root, inventory_service=None, orders_service=None, auth_service=None):
         self.root = root
         self.root.title("Book Management System - Login")
         self.root.geometry("420x260")
-        self.auth_service = AuthService()
+        self.auth_service = auth_service or AuthService()
         # Keep one shared inventory service for the session so admin/staff CRUD
         # actions are working against the same in-memory catalog after login.
         self.inventory_service = inventory_service or InventoryService()
@@ -34,6 +34,16 @@ class LoginApp:
         self.password.pack()
 
         tk.Button(self.root, text="Login", command=self.login).pack(pady=10)
+
+        forgot_password = tk.Label(
+            self.root,
+            text="Forgot password?",
+            fg="#1d4ed8",
+            cursor="hand2",
+            font=("Arial", 10, "underline"),
+        )
+        forgot_password.pack()
+        forgot_password.bind("<Button-1>", lambda _event: self.open_forgot_password_dialog())
 
         tk.Label(
             self.root,
@@ -99,7 +109,12 @@ class LoginApp:
         for widget in self.root.winfo_children():
             widget.destroy()
 
-        LoginApp(self.root, self.inventory_service, self.orders_service)
+        LoginApp(
+            self.root,
+            self.inventory_service,
+            self.orders_service,
+            self.auth_service,
+        )
 
     def open_customer_dashboard(self, username, email):
         """
@@ -119,3 +134,69 @@ class LoginApp:
             self.show_login_screen,
         )
         customer_window.pack(fill="both", expand=True)
+
+    def open_forgot_password_dialog(self):
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Reset Customer Password")
+        dialog.geometry("380x280")
+        dialog.resizable(False, False)
+        dialog.transient(self.root)
+        dialog.grab_set()
+
+        tk.Label(
+            dialog,
+            text="Customer Password Reset",
+            font=("Arial", 14, "bold"),
+        ).pack(pady=(16, 8))
+        tk.Label(
+            dialog,
+            text="Enter your customer username, email, and a new password.",
+            wraplength=320,
+            justify="center",
+        ).pack(pady=(0, 12))
+
+        form = tk.Frame(dialog)
+        form.pack(fill="x", padx=24)
+
+        username_var = tk.StringVar(value=self.username.get().strip())
+        email_var = tk.StringVar(value="")
+        new_password_var = tk.StringVar(value="")
+        confirm_password_var = tk.StringVar(value="")
+        status_var = tk.StringVar(value="")
+
+        fields = [
+            ("Username", username_var, False),
+            ("Email", email_var, False),
+            ("New Password", new_password_var, True),
+            ("Confirm Password", confirm_password_var, True),
+        ]
+
+        for label_text, variable, hide_text in fields:
+            tk.Label(form, text=label_text, anchor="w").pack(fill="x")
+            tk.Entry(form, textvariable=variable, show="*" if hide_text else "").pack(
+                fill="x",
+                pady=(0, 10),
+            )
+
+        tk.Label(dialog, textvariable=status_var, fg="#b42318", wraplength=320).pack(
+            padx=24,
+            pady=(0, 10),
+        )
+
+        def submit_reset():
+            is_reset, message = self.auth_service.reset_customer_password(
+                username_var.get(),
+                email_var.get(),
+                new_password_var.get(),
+                confirm_password_var.get(),
+            )
+            if not is_reset:
+                status_var.set(message)
+                return
+
+            messagebox.showinfo("Password Reset", message, parent=dialog)
+            dialog.destroy()
+
+        tk.Button(dialog, text="Reset Password", command=submit_reset).pack(
+            pady=(0, 16)
+        )

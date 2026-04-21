@@ -59,3 +59,39 @@ class AuthService:
             ("staff1", "books123"),
             ("customer1", "reader123"),
         ]
+
+    def reset_customer_password(
+        self,
+        username: str,
+        email: str,
+        new_password: str,
+        confirm_password: str,
+    ) -> tuple[bool, str]:
+        username = username.strip().lower()
+        email = email.strip().lower()
+        new_password = new_password.strip()
+        confirm_password = confirm_password.strip()
+
+        if not username or not email or not new_password or not confirm_password:
+            return False, "All reset fields are required."
+
+        user = self._users.get(username)
+        if user is None:
+            return False, "Customer account could not be found."
+
+        if user["role"] != "customer":
+            return False, "Only customer accounts can reset passwords here."
+
+        if user["email"].lower() != email:
+            return False, "Email does not match the selected customer account."
+
+        if new_password != confirm_password:
+            return False, "New password and confirmation do not match."
+
+        if len(new_password) < 6:
+            return False, "New password must be at least 6 characters long."
+
+        # Update the in-memory auth store so the new password works immediately
+        # from the login screen during the same session.
+        user["password"] = new_password
+        return True, "Password reset successfully. You can log in now."
