@@ -138,7 +138,7 @@ class LoginApp:
     def open_forgot_password_dialog(self):
         dialog = tk.Toplevel(self.root)
         dialog.title("Reset Customer Password")
-        dialog.geometry("380x280")
+        dialog.geometry("380x420")
         dialog.resizable(False, False)
         dialog.transient(self.root)
         dialog.grab_set()
